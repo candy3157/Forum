@@ -26,6 +26,11 @@ type PostListItem = Prisma.PostGetPayload<{
     };
 }>;
 
+const navItemBase =
+    "group inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors " +
+    "text-gray-700 hover:bg-violet-50 hover:text-violet-900 " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300";
+
 export default async function PostsPage() {
     const posts: PostListItem[] = await prisma.post.findMany({
         orderBy: { createdAt: "desc" },
@@ -50,10 +55,7 @@ export default async function PostsPage() {
                     </p>
                 </div>
 
-                <Link
-                    href="/posts/new"
-                    className="rounded-lg bg-black px-4 py-2 text-sm text-white"
-                >
+                <Link href="/posts/new" className={navItemBase}>
                     새 글 작성
                 </Link>
             </div>
@@ -70,7 +72,7 @@ export default async function PostsPage() {
                                 <Link href={`/posts/${p.id}`} className="block">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
-                                            <div className="text-base font-medium">
+                                            <div className="text-base font-medium text-black">
                                                 {p.title}
                                             </div>
                                             <div className="mt-1 text-xs text-gray-500">

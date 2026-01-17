@@ -30,6 +30,11 @@ type PostDetail = Prisma.PostGetPayload<{
     };
 }>;
 
+const navItemBase =
+    "group inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors " +
+    "text-gray-700 hover:bg-violet-50 hover:text-violet-900 " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300";
+
 export default async function PostDetailPage({
     params,
 }: {
@@ -69,7 +74,7 @@ export default async function PostDetailPage({
                     <div className="flex items-center gap-2">
                         <Link
                             href={`/posts/${post.id}/edit`}
-                            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+                            className={navItemBase}
                         >
                             수정
                         </Link>
@@ -79,7 +84,9 @@ export default async function PostDetailPage({
             </div>
 
             <div className="mt-6 rounded-xl border bg-white p-6">
-                <h1 className="text-2xl font-semibold">{post.title}</h1>
+                <h1 className="text-2xl font-semibold text-black">
+                    {post.title}
+                </h1>
                 <div className="mt-2 text-sm text-gray-500">
                     작성자: {post.author?.username ?? "Unknown"} ·{" "}
                     {formatDate(post.createdAt)}

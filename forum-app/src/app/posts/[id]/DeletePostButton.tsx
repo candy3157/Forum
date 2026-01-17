@@ -41,7 +41,7 @@ export default function DeletePostButton({ postId }: { postId: string }) {
             alert(
                 err instanceof Error
                     ? err.message
-                    : "알 수 없는 오류가 발생했습니다."
+                    : "알 수 없는 오류가 발생했습니다.",
             );
         } finally {
             setDeleting(false);
@@ -53,7 +53,7 @@ export default function DeletePostButton({ postId }: { postId: string }) {
             type="button"
             onClick={onDelete}
             disabled={deleting}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50 hover:outline"
         >
             {deleting ? "삭제 중..." : "삭제"}
         </button>

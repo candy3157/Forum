@@ -14,6 +14,11 @@ export default function LoginPage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
+    const navItemBase =
+        "group inline-flex items-center justify-center gap-2 rounded-lg outline w-full py-2 text-sm font-medium transition-colors " +
+        "text-gray-700 hover:bg-violet-50 hover:text-violet-900 " +
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300";
+
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
@@ -24,6 +29,7 @@ export default function LoginPage() {
         }
 
         setSubmitting(true);
+
         try {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
@@ -47,10 +53,18 @@ export default function LoginPage() {
                 throw new Error(data.message || "로그인에 실패했습니다.");
             }
 
+            // ✅ 로그인 성공
+            // 1. 최종 목적지로 이동
             router.replace(nextPath);
+
+            // 2. 해당 라우트 기준으로 Server Component 재검증 (Navbar 즉시 반영)
+            router.refresh();
         } catch (err) {
-            if (err instanceof Error) setError(err.message);
-            else setError("알 수 없는 오류가 발생했습니다.");
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("알 수 없는 오류가 발생했습니다.");
+            }
         } finally {
             setSubmitting(false);
         }
@@ -71,10 +85,8 @@ export default function LoginPage() {
                     <input
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={identifier}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setIdentifier(e.target.value)
-                        }
-                        placeholder="test@example.com 또는 test_user"
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder="Email 또는 Username 입력"
                         autoComplete="username"
                     />
                 </div>
@@ -87,9 +99,7 @@ export default function LoginPage() {
                         type="password"
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={password}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPassword(e.target.value)
-                        }
+                        onChange={(e) => setPassword(e.target.value)}
                         autoComplete="current-password"
                     />
                 </div>
@@ -103,7 +113,7 @@ export default function LoginPage() {
                 <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full rounded-lg bg-black px-4 py-2 text-white disabled:opacity-50"
+                    className={navItemBase}
                 >
                     {submitting ? "로그인 중..." : "로그인"}
                 </button>
@@ -111,7 +121,10 @@ export default function LoginPage() {
 
             <div className="mt-4 text-sm text-gray-600">
                 계정이 없으신가요?{" "}
-                <Link className="underline" href="/signup">
+                <Link
+                    className="underline underline-offset-4 hover:decoration-violet-500 transition-colors"
+                    href="/signup"
+                >
                     회원가입
                 </Link>
             </div>
