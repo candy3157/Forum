@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+
+type PostResponse = {
+    title?: string;
+    content?: string;
+    message?: string;
+};
 
 export default function EditPostPage() {
     const router = useRouter();
     const params = useParams();
-    const id = params?.id;
+
+    // useParams()의 id는 string | string[] | undefined 형태일 수 있으므로 안전하게 처리
+    const id = useMemo(() => {
+        const raw = (params as Record<string, string | string[] | undefined>)
+            ?.id;
+        if (!raw) return "";
+        return Array.isArray(raw) ? raw[0] : raw;
+    }, [params]);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -24,6 +37,7 @@ export default function EditPostPage() {
         const load = async () => {
             setError("");
             setLoading(true);
+
             try {
                 const res = await fetch(`/api/posts/${id}`, {
                     method: "GET",
@@ -36,32 +50,41 @@ export default function EditPostPage() {
                 }
 
                 if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
+                    const data = (await res
+                        .json()
+                        .catch(() => ({}))) as PostResponse;
                     throw new Error(
-                        data?.message || "게시글을 불러오지 못했습니다."
+                        data.message || "게시글을 불러오지 못했습니다."
                     );
                 }
 
-                const post = await res.json();
+                const post = (await res
+                    .json()
+                    .catch(() => ({}))) as PostResponse;
                 if (cancelled) return;
 
                 setTitle(post.title ?? "");
                 setContent(post.content ?? "");
             } catch (err) {
-                if (!cancelled)
-                    setError(err?.message || "알 수 없는 오류가 발생했습니다.");
+                if (cancelled) return;
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 오류가 발생했습니다."
+                );
             } finally {
                 if (!cancelled) setLoading(false);
             }
         };
 
         load();
+
         return () => {
             cancelled = true;
         };
     }, [id, router]);
 
-    const onSubmit = async (e) => {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
 
@@ -93,13 +116,19 @@ export default function EditPostPage() {
             }
 
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data?.message || "수정에 실패했습니다.");
+                const data = (await res
+                    .json()
+                    .catch(() => ({}))) as PostResponse;
+                throw new Error(data.message || "수정에 실패했습니다.");
             }
 
             router.replace(`/posts/${id}`);
         } catch (err) {
-            setError(err?.message || "알 수 없는 오류가 발생했습니다.");
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "알 수 없는 오류가 발생했습니다."
+            );
         } finally {
             setSaving(false);
         }
@@ -123,7 +152,9 @@ export default function EditPostPage() {
                     <input
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setTitle(e.target.value)
+                        }
                         maxLength={200}
                     />
                 </div>
@@ -133,7 +164,9 @@ export default function EditPostPage() {
                     <textarea
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                            setContent(e.target.value)
+                        }
                         rows={10}
                     />
                 </div>

@@ -28,7 +28,7 @@ export default function RootLayout({
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}
             >
-                <header className="border-b bg-white">
+                <header className="border-b">
                     <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
                         <Link href="/" className="font-semibold">
                             Forum

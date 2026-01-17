@@ -3,14 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+type CreatePostResponse = {
+    id?: string;
+    message?: string;
+};
+
 export default function NewPostPage() {
     const router = useRouter();
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
-    const onSubmit = async (e) => {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
 
@@ -24,29 +30,38 @@ export default function NewPostPage() {
             const res = await fetch("/api/posts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include", // 세션 쿠키 포함
+                credentials: "include",
                 body: JSON.stringify({
                     title: title.trim(),
                     content: content.trim(),
                 }),
             });
 
+            // 응답 바디는 한 번만 읽기
+            const data = (await res
+                .json()
+                .catch(() => ({}))) as CreatePostResponse;
+
             if (res.status === 401) {
-                // 미들웨어가 페이지 접근은 막지만, 혹시 세션 만료 등 대비
                 router.replace("/login?next=/posts/new");
                 return;
             }
 
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data?.message || "게시글 생성에 실패했습니다.");
+                throw new Error(data.message || "게시글 생성에 실패했습니다.");
             }
 
-            const post = await res.json();
-            // 생성 후 상세로 이동(상세 페이지가 /posts/[id] 라는 가정)
-            router.replace(`/posts/${post.id}`);
+            if (!data.id) {
+                throw new Error("서버 응답에 게시글 id가 없습니다.");
+            }
+
+            router.replace(`/posts/${data.id}`);
         } catch (err) {
-            setError(err?.message || "알 수 없는 오류가 발생했습니다.");
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "알 수 없는 오류가 발생했습니다."
+            );
         } finally {
             setSubmitting(false);
         }
@@ -65,7 +80,9 @@ export default function NewPostPage() {
                     <input
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setTitle(e.target.value)
+                        }
                         placeholder="제목을 입력하세요"
                         maxLength={200}
                     />
@@ -76,7 +93,9 @@ export default function NewPostPage() {
                     <textarea
                         className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring"
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                            setContent(e.target.value)
+                        }
                         placeholder="내용을 입력하세요"
                         rows={10}
                     />
@@ -96,6 +115,7 @@ export default function NewPostPage() {
                     >
                         {submitting ? "등록 중..." : "등록"}
                     </button>
+
                     <button
                         type="button"
                         onClick={() => router.back()}
