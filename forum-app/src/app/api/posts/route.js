@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
 
-export const runtime = "nodejs"; // (선택) node 런타임 명시
+export const runtime = "nodejs";
 
 function badRequest(message = "Invalid request") {
   return NextResponse.json({ message }, { status: 400 });
@@ -12,28 +12,43 @@ function serverError() {
   return NextResponse.json({ message: "Server error" }, { status: 500 });
 }
 
-// 게시글 목록 조회 (커서 기반 페이지네이션)
-// GET /api/posts?take=10&cursor=<lastPostId>
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
 
     const takeRaw = searchParams.get("take");
-    const cursor = searchParams.get("cursor");
+    const cursorRaw = searchParams.get("cursor");
+    const qRaw = searchParams.get("q") || "";
+    const q = qRaw.trim();
 
     const takeParsed = parseInt(takeRaw || "10", 10);
     const take = Number.isFinite(takeParsed)
       ? Math.min(Math.max(takeParsed, 1), 50)
       : 10;
 
+    const cursor =
+      typeof cursorRaw === "string" && cursorRaw.length > 0 ? cursorRaw : null;
+
+    const where =
+      q.length > 0
+        ? {
+            OR: [
+              { title: { contains: q, mode: "insensitive" } },
+              { content: { contains: q, mode: "insensitive" } }, // ✅ 수정
+              { author: { username: { contains: q, mode: "insensitive" } } },
+            ],
+          }
+        : undefined;
+
     const items = await prisma.post.findMany({
-      take: take + 1, // ✅ 다음 페이지 존재 여부 확인을 위해 1개 더 가져옴
+      take: take + 1,
       ...(cursor
         ? {
             cursor: { id: cursor },
             skip: 1,
           }
         : {}),
+      where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: {
         id: true,
@@ -43,7 +58,7 @@ export async function GET(req) {
         updatedAt: true,
         authorId: true,
         author: { select: { id: true, username: true } },
-        _count: { select: { comments: true } }, // ✅ 댓글 수
+        _count: { select: { comments: true } },
       },
     });
 
@@ -58,7 +73,6 @@ export async function GET(req) {
   }
 }
 
-// 게시글 생성 (로그인 필요)
 export async function POST(req) {
   try {
     const user = await getCurrentUser();
@@ -71,24 +85,13 @@ export async function POST(req) {
     const content =
       typeof body?.content === "string" ? body.content.trim() : "";
 
-    if (!title || !content) {
-      return badRequest("Missing fields");
-    }
-
-    // (선택) 길이 제한 - 필요 없으면 제거해도 됨
-    if (title.length > 200) {
-      return badRequest("Title is too long (max 200)");
-    }
-    if (content.length > 20000) {
+    if (!title || !content) return badRequest("Missing fields");
+    if (title.length > 200) return badRequest("Title is too long (max 200)");
+    if (content.length > 20000)
       return badRequest("Content is too long (max 20000)");
-    }
 
     const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        authorId: user.id, // ✅ 서버가 세션 기반으로 강제
-      },
+      data: { title, content, authorId: user.id },
       include: { author: { select: { id: true, username: true } } },
     });
 

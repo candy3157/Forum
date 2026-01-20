@@ -1,33 +1,17 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import PostsListClient from "./PostsListClient";
 
-export const dynamic = "force-dynamic"; // 개발 단계에서 캐시 이슈 방지(항상 최신)
+export const dynamic = "force-dynamic";
 
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
-}
-
-// ✅ Prisma select 결과 타입을 명시
 type PostListItem = Prisma.PostGetPayload<{
   select: {
     id: true;
     title: true;
     createdAt: true;
-    author: {
-      select: {
-        id: true;
-        username: true;
-      };
-    };
-    _count: {
-      select: {
-        comments: true;
-      };
-    };
+    author: { select: { id: true; username: true } };
+    _count: { select: { comments: true } };
   };
 }>;
 
@@ -37,19 +21,25 @@ const navItemBase =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300";
 
 export default async function PostsPage() {
-  const posts: PostListItem[] = await prisma.post.findMany({
-    orderBy: { createdAt: "desc" },
+  const TAKE = 20;
+
+  const rows: PostListItem[] = await prisma.post.findMany({
+    take: TAKE + 1,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: {
       id: true,
       title: true,
       createdAt: true,
-      author: {
-        select: { id: true, username: true },
-      },
+      author: { select: { id: true, username: true } },
       _count: { select: { comments: true } },
     },
-    take: 50,
   });
+
+  const hasMore = rows.length > TAKE;
+  const initialItems = hasMore ? rows.slice(0, TAKE) : rows;
+  const initialNextCursor = hasMore
+    ? initialItems[initialItems.length - 1]?.id
+    : null;
 
   return (
     <div>
@@ -67,35 +57,11 @@ export default async function PostsPage() {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-xl border bg-white">
-        {posts.length === 0 ? (
-          <div className="p-6 text-sm text-gray-600">
-            아직 게시글이 없습니다. 첫 글을 작성해보세요.
-          </div>
-        ) : (
-          <ul className="divide-y">
-            {posts.map((p) => (
-              <li key={p.id} className="p-4 hover:bg-gray-50">
-                <Link href={`/posts/${p.id}`} className="block">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-base font-medium text-black">
-                        {p.title}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        작성자: {p.author?.username ?? "Unknown"} ·{" "}
-                        {formatDate(p.createdAt)}
-                        {typeof p._count?.comments === "number"
-                          ? ` · 댓글 ${p._count.comments}`
-                          : ""}
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-400">→</div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <PostsListClient
+          initialItems={initialItems}
+          initialNextCursor={initialNextCursor}
+          take={TAKE}
+        />
       </div>
     </div>
   );

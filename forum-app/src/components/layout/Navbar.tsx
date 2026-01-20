@@ -27,24 +27,21 @@ export default async function Navbar() {
 
         <nav className="flex items-center gap-2">
           <Link href="/posts" className={navItemBase}>
-            <span className="transition-colors group-hover:text-violet-900">
-              게시판
-            </span>
+            게시판
           </Link>
 
           {user ? (
             <div className="flex items-center gap-2">
-              <div className={navItemBase}>
+              {/* ✅ 여기만 반드시 고쳐야 함 */}
+              <Link href="/posts/mine" className={navItemBase}>
                 <span className="text-gray-500 group-hover:text-violet-700">
                   안녕하세요,
                 </span>
                 <span className="font-semibold text-gray-700 group-hover:text-violet-900">
                   {user.username}
                 </span>
-              </div>
+              </Link>
 
-              {/* LogoutButton도 동일한 UI로 맞추는 게 핵심 */}
-              {/* LogoutButton이 button이라면 className prop 받아서 navItemBase 적용 */}
               <LogoutButton />
             </div>
           ) : (
@@ -57,6 +54,7 @@ export default async function Navbar() {
               </Link>
             </div>
           )}
+
           <ThemeToggle />
         </nav>
       </div>
