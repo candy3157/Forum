@@ -13,6 +13,7 @@ model User {
   password  String   // 해시 저장 (평문 금지)
   createdAt DateTime @default(now())
   posts     Post[]
+  comments Comment[]
 }
 
 model Post {
@@ -25,5 +26,21 @@ model Post {
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
 
+  @@index([authorId, createdAt])
+
+  comments Comment[]
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([postId, createdAt])
   @@index([authorId, createdAt])
 }
