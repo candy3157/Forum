@@ -1,13 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 export default function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // next-themes가 hydration 이후 resolvedTheme를 채웁니다.
-  // 이 값이 없을 때는 렌더를 피해서 mismatch/깜빡임을 방지합니다.
-  if (!resolvedTheme) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid server/client mismatch: render nothing until after mount.
+  if (!mounted || !resolvedTheme) return null;
 
   const current = theme === "system" ? resolvedTheme : theme;
   const isDark = current === "dark";
@@ -17,9 +22,9 @@ export default function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-      aria-label="다크모드 토글"
+      aria-label="Toggle theme"
     >
-      {isDark ? "라이트 모드" : "다크 모드"}
+      {isDark ? "Light mode" : "Dark mode"}
     </button>
   );
 }
